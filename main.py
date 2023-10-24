@@ -1,4 +1,5 @@
 from typing import Annotated
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, Path, status
 from models import Tweet
@@ -23,6 +24,13 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
+class TweetRequest(BaseModel):
+    title: str = Field(min_length=3)
+    description: str = Field(min_length=3, max_length=300)
+    hashtag: str = Field(min_length=3, max_length=100)
+    priority: int = Field(ge=0, lt=5)
+
+
 @app.get("/", status_code=status.HTTP_200_OK)
 async def read_all(db: db_dependency):
     return db.query(Tweet).all()
@@ -36,3 +44,11 @@ async def read_tweet(db: db_dependency, tweet_id: int = Path(gt=0)): # validate 
         return tweet_model
 
     raise HTTPException(status_code=404, detail='Tweet not found.')
+
+
+@app.post("/tweet", status_code=status.HTTP_201_CREATED)
+async def create_tweet(db: db_dependency, req: TweetRequest):
+    tweet_model = Tweet(**req.dict())
+
+    db.add(tweet_model)
+    db.commit()
