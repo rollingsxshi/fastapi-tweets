@@ -52,3 +52,23 @@ async def create_tweet(db: db_dependency, req: TweetRequest):
 
     db.add(tweet_model)
     db.commit()
+
+
+@app.put("/tweet/{tweet_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def update_tweet(
+    db: db_dependency,
+    req: TweetRequest,
+    tweet_id: int = Path(gt=0)
+):
+    tweet_model = db.query(Tweet).filter(Tweet.id == tweet_id).first()
+
+    if tweet_model is None:
+        raise HTTPException(status_code=404, detail='Tweet not found.')
+
+    tweet_model.title = req.title
+    tweet_model.description = req.description
+    tweet_model.hashtag = req.hashtag
+    tweet_model.priority = req.priority
+
+    db.add(tweet_model)
+    db.commit()
