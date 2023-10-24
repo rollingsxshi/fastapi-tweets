@@ -1,5 +1,6 @@
 from typing import Annotated
 from pydantic import BaseModel, Field
+from sqlalchemy import delete
 from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, Path, status
 from models import Tweet
@@ -71,4 +72,14 @@ async def update_tweet(
     tweet_model.priority = req.priority
 
     db.add(tweet_model)
+    db.commit()
+
+
+@app.delete("/tweet/{tweet_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tweet(db: db_dependency, tweet_id: int = Path(gt=0)):
+    tweet_model = db.query(Tweet).filter(Tweet.id == tweet_id).first()
+    if tweet_model is None:
+        raise HTTPException(status_code=404, detail='Tweet not found.')
+
+    db.query(Tweet).filter(Tweet.id == tweet_id).delete()
     db.commit()
