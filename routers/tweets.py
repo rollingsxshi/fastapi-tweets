@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from models import Tweet
 from db import SessionLocal
+from routers.auth import get_current_user
 
 
 router = APIRouter()
@@ -19,7 +20,7 @@ def get_db():
 
 # Depends - dependency injection
 db_dependency = Annotated[Session, Depends(get_db)]
-
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 class TweetRequest(BaseModel):
     title: str = Field(min_length=3)
@@ -44,9 +45,11 @@ async def read_tweet(db: db_dependency, tweet_id: int = Path(gt=0)): # validate 
 
 
 @router.post("/tweet", status_code=status.HTTP_201_CREATED)
-async def create_tweet(db: db_dependency, req: TweetRequest):
-    tweet_model = Tweet(**req.dict())
+async def create_tweet(user: user_dependency ,db: db_dependency, req: TweetRequest):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
 
+    tweet_model = Tweet(**req.model_dump(), author_id=user.get('id'))
     db.add(tweet_model)
     db.commit()
 
