@@ -1,8 +1,11 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from models import Users
+from passlib.context import CryptContext
 
 router = APIRouter()
+
+bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 
 class CreateUserRequest(BaseModel):
@@ -21,7 +24,7 @@ async def create_user(req: CreateUserRequest):
         username = req.username,
         first_name = req.first_name,
         last_name = req.last_name,
-        hashed_password = req.password,
+        hashed_password = bcrypt_context.hash(req.password),
         role = req.role,
         is_active = True,
     )
