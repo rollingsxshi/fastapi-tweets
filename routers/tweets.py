@@ -30,8 +30,8 @@ class TweetRequest(BaseModel):
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-async def read_all(db: db_dependency):
-    return db.query(Tweet).all()
+async def read_all(user: user_dependency, db: db_dependency):
+    return db.query(Tweet).filter(Tweet.author_id == user.get('id')).all()
 
 
 @router.get("/tweet/{tweet_id}", status_code=status.HTTP_200_OK)
