@@ -31,12 +31,23 @@ class TweetRequest(BaseModel):
 
 @router.get("/", status_code=status.HTTP_200_OK)
 async def read_all(user: user_dependency, db: db_dependency):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+
     return db.query(Tweet).filter(Tweet.author_id == user.get('id')).all()
 
 
 @router.get("/tweet/{tweet_id}", status_code=status.HTTP_200_OK)
-async def read_tweet(db: db_dependency, tweet_id: int = Path(gt=0)): # validate path param gt=0
-    tweet_model = db.query(Tweet).filter(Tweet.id == tweet_id).first()
+async def read_tweet(
+    user: user_dependency,
+    db: db_dependency,
+    tweet_id: int = Path(gt=0)
+): # validate path param gt=0
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+
+    tweet_model = db.query(Tweet).filter(Tweet.id == tweet_id)\
+                    .filter(Tweet.author_id == user.get('id')).first()
 
     if tweet_model is not None:
         return tweet_model
