@@ -91,10 +91,20 @@ async def update_tweet(
 
 
 @router.delete("/tweet/{tweet_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_tweet(db: db_dependency, tweet_id: int = Path(gt=0)):
-    tweet_model = db.query(Tweet).filter(Tweet.id == tweet_id).first()
+async def delete_tweet(
+    user: user_dependency,
+    db: db_dependency,
+    tweet_id: int = Path(gt=0)
+):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+
+    tweet_model = db.query(Tweet).filter(Tweet.id == tweet_id)\
+                    .filter(Tweet.author_id == user.get('id')).first()
+
     if tweet_model is None:
         raise HTTPException(status_code=404, detail='Tweet not found.')
 
-    db.query(Tweet).filter(Tweet.id == tweet_id).delete()
+    db.query(Tweet).filter(Tweet.id == tweet_id)\
+        .filter(Tweet.author_id == user.get('id')).delete()
     db.commit()
