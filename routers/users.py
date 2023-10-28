@@ -32,6 +32,14 @@ class UserVerification(BaseModel):
     new_password: str = Field(min_length=6)
 
 
+class UserDetails(BaseModel):
+    email: str
+    username: str
+    first_name: str
+    last_name: str
+    phone_number: str
+
+
 @router.get("/", status_code=status.HTTP_200_OK)
 async def get_user(user: user_dependency, db: db_dependency):
     if user is None:
@@ -59,5 +67,23 @@ async def change_password(user: user_dependency, db: db_dependency, req: UserVer
         )
 
     user_model.hashed_password = bcrypt_context.hash(req.new_password)
+    db.add(user_model)
+    db.commit()
+
+@router.put("/details", status_code=status.HTTP_204_NO_CONTENT)
+async def change_details(user: user_dependency, db: db_dependency, req: UserDetails):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Authentication failed.'
+        )
+
+    user_model = db.query(Users).filter(Users.id == user.get('id')).first()
+
+    user_model.email = req.email
+    user_model.username = req.username
+    user_model.first_name = req.first_name
+    user_model.last_name = req.last_name
+    user_model.phone_number = req.phone_number
     db.add(user_model)
     db.commit()
